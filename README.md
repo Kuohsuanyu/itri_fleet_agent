@@ -28,12 +28,28 @@
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up --authkey=tskey-auth-XXXX --advertise-tags=tag:robot
 
-# 2. 裝套件(純 Python,ARM 上不用編譯)
-pip install itri-fleet-agent
+# 2. 裝套件
+sudo apt install -y pipx && pipx ensurepath
+pipx install https://<你的伺服器>/agent/latest.whl
 ```
 
-唯一的相依是 `paho-mqtt`。登記走標準函式庫的 `urllib`,樹莓派上不需要再裝 wheel。
-支援 Python 3.9 以上(Raspberry Pi OS Bullseye 內建 3.9 就能跑)。
+⚠️ **Raspberry Pi OS Bookworm / Debian 12 起不能直接 `pip install`** ——
+PEP 668 禁止 pip 寫入系統 Python,會回 `error: externally-managed-environment`。
+
+`pipx` 把 CLI 裝進獨立環境但仍然把 `itri-agent` 放到 PATH 上,是這種命令列工具的
+正確裝法。三種替代方案:
+
+| 方法 | 指令 | 適用 |
+|---|---|---|
+| **pipx**(建議) | `pipx install <url>` | CLI 工具的標準做法 |
+| venv | `python3 -m venv ~/.itri-venv && ~/.itri-venv/bin/pip install <url>` | 想完全掌控路徑 |
+| 強制 | `pip install --break-system-packages <url>` | 不建議,可能弄壞系統套件 |
+
+用 venv 的話後續指令要用 `~/.itri-venv/bin/itri-agent`,
+而 `install-service` 產生的 systemd unit 會自動指向正確的 Python(它用 `sys.executable`)。
+
+唯一的相依是 `paho-mqtt`(純 Python,ARM 不用編譯)。登記走標準函式庫的 `urllib`。
+支援 Python 3.9 以上(Bullseye 內建 3.9、Bookworm 3.11 都可以)。
 
 ## 三步驟上線
 
